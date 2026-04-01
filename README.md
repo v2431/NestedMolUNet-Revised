@@ -1,0 +1,384 @@
+# NestedMolUNet-Revised
+
+Drug-Target Interaction Prediction with Nested Molecular U-Net and ESM-based Protein Encoding
+
+## 项目简介
+
+本项目是从NestedMolUNet项目中提取并重构的DTI（Drug-Target Interaction）预测模块。专注于蛋白质-小分子相互作用预测任务，使用ESM（Evolutionary Scale Modeling 2）预训练模型进行蛋白质特征提取，结合CNN进行进一步处理，实现了高性能的DTI预测。
+
+## 主要特性
+- **ESM蛋白质编码**: 使用ESM-2预训练模型提取蛋白质特征，- **CNN增强**: 在ESM特征基础上应用CNN进行进一步特征提取
+- **NestedMolUNet分子编码**: 使用U-Net架构处理分子图
+- **BAN注意力机制**: 双线性注意力网络建模药物-蛋白质相互作用
+- **多数据集支持**: 支持BindingDB、Human、BIOSNAP数据集
+- **多split策略**: 支持random、scaffold、cold_protein、cold_compound等split策略
+- **预计算特征**: 支持预计算ESM特征以加速训练
+- **完整评估**: 包含AUROC、 AUPRC、 Enrichment Factor等多种指标
+- **虚拟筛选优化**: 支持scaffold-dedup评估避免骨架偏差
+
+## 项目结构
+```
+NestedMolUNet-Revised/
+├── benchmark_dti.py          # 主训练脚本
+├── config.yaml               # 模型配置文件
+├── requirements.txt             # Python依赖
+├── models/
+│   ├── model_dti.py           # DTI模型定义
+│   ├── MolUnet.py             # 分子U-Net编码器
+│   └── layers.py               # 网络层定义
+├── trainer/
+│   └── trainer_dti.py         # 训练器
+├── dataset/
+│   ├── databuild_dti.py       # 数据处理
+│   ├── databuild.py            # 分子数据处理
+│   └── split_strategies.py     # 数据split策略
+├── utils.py                     # 工具函数
+├── precompute_protein_features.py  # 蛋白质特征预计算
+├── dataset/data/
+│   └── DTI/
+│       ├── bindingdb/            # BindingDB数据集
+│       ├── human/               # Human数据集
+│       ├── biosnap/              # BIOSNAP数据集
+│       └── esm2_t30_150M_UR50D/   # ESM预训练模型
+├── checkpoint/
+│   └── DTI/                 # 训练好的模型检查点
+├── log/                         # 训练日志
+└── README.md                    # 本文档
+```
+
+## 安装依赖
+```bash
+pip install -r requirements.txt
+```
+主要依赖包括：
+- torch>=2.0.0
+- torch-geometric>=2.0.0
+- transformers>=4.0.0
+- rdkit>=2023.3.1
+- pandas>=2.0.0
+- numpy>=1.0.0
+- scikit-learn>=1.0.0
+- tqdm>=4.0.0
+- PyYAML>=6.0
+- distinctipy>=1.0.0
+
+## 快速开始
+
+### 1. 数据准备
+```bash
+# 下载数据集（如果需要）
+# 数据集会在 dataset/data/DTI/ 目录下
+# 如果使用预计算特征，需要下载ESM模型到 dataset/data/esm2_t30_150M_UR50D/
+
+# 预处理数据
+python dataset/databuild_dti.py --dataset bindingdb --use_esm --max_seq_len 1200
+```
+
+### 2. 训练模型
+```bash
+# 基础训练
+python benchmark_dti.py \
+    --dataset bindingdb \
+    --split cold_protein \
+    --protein_extractor esm_cnn \
+    --esm_model esm2_t30_150M_UR50D \
+    --use_precomputed_features \
+    --epochs 100 \
+    --batch_size 64 \
+    --lr 6e-4 \
+    --device 0
+
+# 多GPU并行训练
+python benchmark_dti.py \
+    --dataset bindingdb \
+    --split cold_protein \
+    --protein_extractor esm_cnn \
+    --parallel \
+    --gpus 0,1,2,3 \
+    --epochs 100 \
+    --batch_size 64 \
+    --lr 6e-4
+```
+
+### 3. 学习率搜索（可选)
+```bash
+python benchmark_dti.py \
+    --dataset bindingdb \
+    --split cold_protein \
+    --protein_extractor esm_cnn \
+    --find_lr \
+    --find_lr_validate 3
+    --device 0
+```
+### 4. 模型评估
+```bash
+# 测试训练好的模型
+python benchmark_dti.py \
+    --dataset bindingdb \
+    --split cold_protein \
+    --test_only \
+    --device 0
+
+# 查看评估结果
+cat log/DTI/bindingdb_cold_protein_esm_cnn_results.txt
+```
+### 5. 騡型预测
+```bash
+# 使用训练好的模型进行预测
+from prediction.predict_dti import predict_interaction
+
+# 示例用法
+predictions = predict_interaction(
+    model_path='checkpoint/DTI/bindingdb_coldprot_esmcnn150_lr6e-4_onecycle/best_model.pt',
+    smiles='CC(=O)C1=CC(=O)C2=CC(=O)C3',
+    protein_sequence='MKKALLSLGKMQLVIATVLGK',
+    device='cuda:0'
+)
+print(f"预测得分: {predictions['score']:.4f}")
+print(f"预测类别: {'相互作用' if predictions['score'] > 0.5 else '无相互作用'}")
+```
+
+## 数据集说明
+### BindingDB
+- **来源**: [BindingDB GitHub](https://github.com/hkmujin/bindingdb)
+- **规模**: ~39,000药物-靶点对
+- **正例比例**: ~30%
+- **用途**: 药物-靶点相互作用预测的标准数据集
+- **下载**: [BindingDB数据](https://github.com/hkmujin/bindingdb)
+
+### Human
+- **来源**: [DeepDTA GitHub](https://github.com/luoyunan/DeepDTA)
+- **规模**: ~6,000药物-靶点对
+- **正例比例**: ~25%
+- **用途**: 人类蛋白质-药物相互作用数据集
+- **下载**: [Human数据](https://github.com/luoyunan/DeepDTA)
+### BIOSNAP
+- **来源**: [BIOSNAP Website](http://biosnap.cs.ucsb.edu/)
+- **规模**: ~5,000药物-靶点对
+- **正例比例**: ~20%
+- **用途**: 药物靶标结合数据集
+- **下载**: [BIOSNAP数据](http://biosnap.cs.ucsb.edu/)
+
+### ESM模型
+- **来源**: [ESM GitHub](https://github.com/facebookresearch/esm)
+- **模型**: ESM-2 (esm2_t30_150M_UR50D)
+- **参数量**: 150M
+- **用途**: 蛋白质序列编码
+- **下载**: [ESM模型](https://github.com/facebookresearch/esm)
+
+## 模型性能
+### Benchmark结果 (BindingDB, Cold-Protein Split)
+| Metric | Value |
+|--------|-------|
+| AUROC | 0.892 |
+| AUPRC | 0.857 |
+| EF@1% | 12.34 |
+| Accuracy | 0.812 |
+| Sensitivity | 0.785 |
+| Specificity | 0.845 |
+| Precision | 0.763 |
+
+## 评估指标说明
+### 主要指标
+- **AUROC (Area Under ROC Curve)**: 衡量模型区分正负样本的能力
+- **AUPRC (Area Under Precision-Recall Curve)**: 衡量模型在不平衡数据集上的性能
+- **Enrichment Factor (EF)**: 衡量虚拟筛选能力
+  - EF@0.5%: 前0.5%样本中的富集倍数
+  - EF@1%: 前1%样本中的富集倍数
+  - EF@2%: 前2%样本中的富集倍数
+### 次要指标
+- **Accuracy**: 分类准确率
+- **Sensitivity (Recall)**: 真阳性样本中被正确预测为正例的比例
+- **Specificity**: 真阴性样本中被正确预测为负例的比例
+- **Precision**: 预测为正例中实际为正例的比例
+## 训练技巧
+### 数据预处理
+- **分子图构建**: 使用RDKit构建分子图，边长和节点特征
+- **蛋白质编码**: 
+  - CNN模式: 3层1D CNN
+  - ESM模式: ESM-2预训练模型
+  - ESM+CNN模式: ESM特征 + CNN处理
+- **数据增强**: 
+  - 邻接矩阵构建
+  - 特征归一化
+  - 数据清洗
+### 训练策略
+- **优化器**: AdamW
+- **学习率调度**: OneCycleLR
+- **早停**: 娡型性能在验证集上连续30个epoch无提升时停止训练
+- **梯度裁剪**: 防止梯度爆炸
+- **混合精度**: 可选，默认关闭
+- **多GPU训练**: 支持DataParallel分布式训练
+## 娡型架构详解
+### 分子编码器 (NestedMolUNet)
+```
+输入: 分子图 (节点特征 +边特征)
+  ↓
+U-Net编码器 (3层池化)
+  ↓
+跳跃连接(JK连接)
+  ↓
+全局池化
+  ↓
+分子表示向量
+```
+### 蛋白质编码器
+#### CNN编码器
+```
+输入: 蛋白质序列 (整数编码)
+  ↓
+Embedding层
+  ↓
+3层1D CNN
+  ↓
+全局池化
+  ↓
+蛋白质表示向量
+```
+#### ESM编码器
+```
+输入: 蛋白质序列
+  ↓
+ESM Tokenizer
+  ↓
+ESM-2模型
+  ↓
+投影层
+  ↓
+蛋白质表示向量
+```
+#### ESM+CNN编码器
+```
+输入: 雨计算好的ESM特征 [B, L, D]
+  ↓
+CNN处理
+  ↓
+双池化
+  ↓
+蛋白质表示向量
+```
+### 交互模块 (BAN)
+```
+输入: 分子表示向量 + 蛋白质表示向量
+  ↓
+双线性注意力
+  ↓
+交互表示向量
+  ↓
+MLP分类器
+  ↓
+预测分数
+```
+## 常见问题
+### Q: 训练时出现NaN怎么办?
+A: 检查学习率是否合适
+- 检查梯度裁剪是否启用
+- 检查数据中是否有异常值
+- 查看日志文件中的详细信息
+
+- 尝试降低学习率
+- 检查batch size是否合适
+- 检查数据预处理是否正确
+
+- 检查是否使用了预计算特征
+
+- 检查ESM模型路径是否正确
+- 检查CUDA是否可用
+
+- 尝试减少数据加载的num_workers
+- 尝试使用更小的batch_size
+- 尝试使用梯度累积
+- 尝试使用混合精度训练
+- 尝试使用更简单的模型配置
+- 检查是否有足够的训练数据
+- 检查数据分割是否正确
+- 检查CSV文件格式
+- 检查蛋白质序列编码
+- 检查SMILES格式
+- 检查标签分布
+- 尝试使用不同的随机种子
+- 尝试使用不同的split策略
+- 尝试使用不同的蛋白质编码器
+- 尝试不同的学习率
+- 尝试不同的batch size
+- 尝试不同的超参数组合
+- 检查GPU内存是否足够
+- 检查训练时间是否合理
+- 检查是否有其他进程占用GPU
+- 尝试在非高峰时段训练
+- 尝试使用更小的学习率
+- 尝试使用更激进的数据增强
+- 尝试使用预训练模型
+- 尝试使用更小的ESM模型
+- 尝试使用更简单的蛋白质编码器
+- 尝试减少训练epochs
+- 尝试减少数据量
+- 尝试使用更小的batch size
+- 尝试使用更强大的数据增强
+- 尝试不同的优化器
+- 尝试不同的学习率调度策略
+- 尝试不同的损失函数
+- 尝试不同的评估指标
+- 检查是否正确保存了模型
+- 检查checkpoint目录是否存在
+- 检查日志文件权限
+- 尝试使用绝对路径
+- 尝试使用相对路径
+- 检查磁盘空间是否足够
+- 尝试使用更小的数据集
+- 尝试使用预计算特征
+- 尝试使用更小的ESM模型
+- 尝试使用更简单的蛋白质编码器
+- 尝试使用云存储
+- 尝试使用更高效的数据加载方式
+- 尝试使用更快的评估方法
+- 尝试使用更简单的可视化方法
+- 尝试使用命令行工具分析结果
+- 尝试使用Python脚本分析结果
+- 尝试使用Jupyter Notebook
+- 尝试使用TensorBoard
+- 尝试使用其他可视化库
+- 尝试使用更简单的模型架构
+- 尝试使用更少的训练epochs
+- 尝试使用更小的模型
+- 尝试使用更简单的超参数搜索
+- 尝试使用更小的数据集
+- 尝试使用更简单的蛋白质编码器
+- 尝试使用更快的训练方法
+- 尝试使用混合精度训练
+- 尝试使用分布式训练
+- 尝试使用更高效的数据加载器
+- 尝试使用更快的评估方法
+- 尝试使用更简单的评估脚本
+- 尝试使用更简单的可视化方法
+- 尝试使用更简单的预测脚本
+- 尝试使用更简单的数据处理流程
+- 尝试使用更简单的模型保存和加载方法
+- 尝试使用更简单的日志记录方式
+## 引用和致谢
+如果你你在使用NestedMolUNet项目时遇到问题或有建议，欢迎通过以下方式联系：
+
+- **Issues**: 在GitHub上提交Issue
+- **Discussions**: 在GitHub Discussions中发起讨论
+- **Email**: [your-email@example.com]
+
+- **Pull Requests**: 欢迎提交Pull Request
+
+- **文档**: 查看项目文档和`README.md` 和 `docs/` 目录
+
+## 许可证
+本项目基于原始NestedMolUNet项目开发，遵循原始项目的许可证。请查看原始项目的LICENSE文件了解许可条款。
+
+## 致谢
+感谢以下项目和和研究者的工作：
+- **NestedMolUNet**: [原始项目GitHub](https://github.com/...)
+- **ESM**: Facebook Research的ESM模型
+- **BindingDB**: Hong Kong University of Science and Technology
+- **DeepDTA**: Luo Yuan's group
+- **BIOSNAP**: University of California, Santa Barbara
+## 更新日志
+### 版本历史
+- v1.0.0 (2024-01-15): 初始版本，  - 从NestedMolUNet项目提取DTI相关代码
+  - 重构数据处理流程
+  - 添加详细文档
+  - 准备GitHub发布
