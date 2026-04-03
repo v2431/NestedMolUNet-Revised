@@ -122,7 +122,7 @@ python benchmark_dti.py \
 # 查看评估结果
 cat log/DTI/bindingdb_cold_protein_esm_cnn_results.txt
 ```
-### 5. 騡型预测
+### 5. 相互作用预测
 ```bash
 # 使用训练好的模型进行预测
 from prediction.predict_dti import predict_interaction
