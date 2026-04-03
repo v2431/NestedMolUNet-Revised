@@ -51,17 +51,22 @@ Thumbs.db
 
 # 临时文件
 *.tmp
+*.tmp_*
 *.bak
 *.log
 
 # 数据文件 - 忽略大文件
-# dataset 和 checkpoint 包含大型模型文件，不应提交到git
-dataset/
-checkpoint/
+# dataset 里忽略 .pth 和 .safetensors（可重新生成）
 *.pth
-*.pt
+*.safetensors
 
-# 但排除一些大的中间文件
+# checkpoint - 忽略所有，但保留特定模型
+checkpoint/**/*
+!checkpoint/**/
+!checkpoint/DTI/bindingdb_coldprot_esmcnn150_lr6e-4_onecycle/*_best_roc.pt
+!checkpoint/DTI/bindingdb_coldprot_esmcnn150_lr6e-4_onecycle/*_best_ef_combined.pt
+
+# 忽略大的中间文件
 *.npy
 *.npz
 

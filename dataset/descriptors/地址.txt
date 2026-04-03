@@ -1,0 +1,2 @@
+https://github.com/bp-kelley/descriptastorus
+pubchemfp.py： https://github.com/A-Gentle-Cat/PremuNet
