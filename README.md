@@ -20,30 +20,44 @@ Drug-Target Interaction Prediction with Nested Molecular U-Net and ESM-based Pro
 ```
 NestedMolUNet-Revised/
 ├── benchmark_dti.py          # 主训练脚本
+├── evaluate_dti.py           # 模型评估脚本
 ├── config.yaml               # 模型配置文件
-├── requirements.txt             # Python依赖
-├── models/
-│   ├── model_dti.py           # DTI模型定义
-│   ├── MolUnet.py             # 分子U-Net编码器
-│   └── layers.py               # 网络层定义
-├── trainer/
-│   └── trainer_dti.py         # 训练器
-├── dataset/
-│   ├── databuild_dti.py       # 数据处理
-│   ├── databuild.py            # 分子数据处理
-│   └── split_strategies.py     # 数据split策略
-├── utils.py                     # 工具函数
+├── requirements.txt          # Python依赖
+├── utils.py                  # 工具函数
 ├── precompute_protein_features.py  # 蛋白质特征预计算
+├── models/
+│   ├── model_dti.py          # DTI模型定义
+│   ├── MolUnet.py            # 分子U-Net编码器
+│   ├── layers.py             # 网络层定义
+│   └── utils.py              # 模型工具函数
+├── trainer/
+│   └── trainer_dti.py        # 训练器
+├── dataset/
+│   ├── databuild_dti.py      # DTI数据处理
+│   ├── databuild.py          # 分子数据处理
+│   ├── split_strategies.py   # 数据split策略
+│   ├── utils.py              # 数据工具函数
+│   ├── maplight.py           # Maplight数据处理
+│   ├── tasks_config.yaml     # 任务配置
+│   └── descriptors/          # 分子描述符生成
+│       ├── DescriptorGenerator.py
+│       ├── QED.py
+│       ├── rdDescriptors.py
+│       └── ...
 ├── dataset/data/
 │   └── DTI/
-│       ├── bindingdb/            # BindingDB数据集
-│       ├── human/               # Human数据集
-│       ├── biosnap/              # BIOSNAP数据集
-│       └── esm2_t30_150M_UR50D/   # ESM预训练模型
+│       ├── bindingdb/        # BindingDB数据集
+│       ├── human/            # Human数据集
+│       ├── biosnap/          # BIOSNAP数据集
+│       └── esm2_t30_150M_UR50D/  # ESM预训练模型配置
 ├── checkpoint/
-│   └── DTI/                 # 训练好的模型检查点
-├── log/                         # 训练日志
-└── README.md                    # 本文档
+│   └── DTI/
+│       └── bindingdb_coldprot_esmcnn150_lr6e-4_onecycle/
+│           ├── *_best_roc.pt         # 最佳ROC模型
+│           └── *_best_ef_combined.pt  # 最佳EF模型
+├── log/                      # 训练日志
+├── .gitignore                # Git忽略配置
+└── README.md                 # 本文档
 ```
 
 ## 安装依赖
