@@ -205,11 +205,11 @@ print(f"预测类别: {'相互作用' if predictions['score'] > 0.5 else '无相
 ### 训练策略
 - **优化器**: AdamW
 - **学习率调度**: OneCycleLR
-- **早停**: 娡型性能在验证集上连续30个epoch无提升时停止训练
+- **早停**: 模型性能在验证集上连续30个epoch无提升时停止训练
 - **梯度裁剪**: 防止梯度爆炸
 - **混合精度**: 可选，默认关闭
 - **多GPU训练**: 支持DataParallel分布式训练
-## 娡型架构详解
+## 模型架构详解
 ### 分子编码器 (NestedMolUNet)
 ```
 输入: 分子图 (节点特征 +边特征)
@@ -249,7 +249,7 @@ ESM-2模型
 ```
 #### ESM+CNN编码器
 ```
-输入: 雨计算好的ESM特征 [B, L, D]
+输入: 计算好的ESM特征 [B, L, D]
   ↓
 CNN处理
   ↓
@@ -273,7 +273,7 @@ MLP分类器
 
 
 ## 引用和致谢
-如果你你在使用NestedMolUNet项目时遇到问题或有建议，欢迎通过以下方式联系：
+如果你你在使用NestedMolUNet-Revised项目时遇到问题或有建议，欢迎通过以下方式联系：
 
 - **Issues**: 在GitHub上提交Issue
 - **Discussions**: 在GitHub Discussions中发起讨论
