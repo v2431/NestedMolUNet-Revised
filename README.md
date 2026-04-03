@@ -4,7 +4,7 @@ Drug-Target Interaction Prediction with Nested Molecular U-Net and ESM-based Pro
 
 ## 项目简介
 
-本项目是从NestedMolUNet项目中提取并重构的DTI（Drug-Target Interaction）预测模块。专注于蛋白质-小分子相互作用预测任务，使用ESM（Evolutionary Scale Modeling 2）预训练模型进行蛋白质特征提取，结合CNN进行进一步处理，实现了高性能的DTI预测。
+本项目是从[NestedMolUNet](https://github.com/xfd997700/NestedMolUNet)项目中提取并重构的DTI（Drug-Target Interaction）预测模块。专注于蛋白质-小分子相互作用预测任务，使用ESM（Evolutionary Scale Modeling 2）预训练模型进行蛋白质特征提取，结合CNN进行进一步处理，实现了高性能的DTI预测。
 
 ## 主要特性
 - **ESM蛋白质编码**: 使用ESM-2预训练模型提取蛋白质特征，- **CNN增强**: 在ESM特征基础上应用CNN进行进一步特征提取
