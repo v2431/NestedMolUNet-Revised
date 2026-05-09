@@ -3,12 +3,9 @@
 Created on Wed Mar 23 15:22:37 2022
 
 @author: Fanding Xu
+
+Note: Only import DTI-related modules here to avoid circular dependencies.
+For pretrain/property tasks, import directly from the specific module files.
 """
 
-from .trainer_pretrain import PretrainTrainer
-from .trainer_property import PropertyTrainer
-
-__all__ = ['PretrainTrainer',
-           'PropertyTrainer'
-           ]
-
+__all__ = []
